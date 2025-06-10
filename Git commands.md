@@ -21,3 +21,32 @@
 | `git rm <file>`                | Remove a file from the working directory and staging area        |
 | `git stash`                    | Stash the changes in a dirty working directory                   |
 | `git tag`                      | List, create, or delete tags                                     |
+
+## Configuring User Name and Email in Git
+
+To set your global user name:
+
+```powershell
+git config --global user.name "Your Name"
+```
+
+To set your global email:
+
+```powershell
+git config --global user.email "your.email@example.com"
+```
+
+Replace `Your Name` and `your.email@example.com` with your actual name and email address.
+
+To set them only for the current repository (not globally), omit the `--global` flag:
+
+```powershell
+git config user.name "Your Name"
+git config user.email "your.email@example.com"
+```
+
+To check your current configuration:
+
+```powershell
+git config --list
+```
