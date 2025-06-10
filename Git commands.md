@@ -50,3 +50,73 @@ To check your current configuration:
 ```powershell
 git config --list
 ```
+
+## Connecting to a Remote Repository
+
+To add a remote:
+
+```powershell
+git remote add origin <remote_repository_url>
+```
+
+To change the remote URL:
+
+```powershell
+git remote set-url origin <new_remote_repository_url>
+```
+
+To verify remotes:
+
+```powershell
+git remote -v
+```
+
+## Mapping Local master to Remote main
+
+Rename local branch and set upstream:
+
+```powershell
+git branch -m master main
+git fetch origin
+git branch -u origin/main main
+git push origin main
+git push --set-upstream origin main
+```
+
+## Remove Link to Remote
+
+To remove the remote named origin:
+
+```powershell
+git remote remove origin
+```
+
+## Force Push to Remote
+
+To force push your local branch to the remote (overwriting remote):
+
+```powershell
+git push --force origin main
+```
+
+## Handling 'fetch first' Push Error
+
+If you see an error about needing to fetch first:
+
+1. Pull remote changes:
+
+    ```powershell
+    git pull origin main
+    ```
+
+2. Resolve any conflicts, commit, then push:
+
+    ```powershell
+    git push origin main
+    ```
+
+If you are sure your local branch is correct and want to overwrite remote:
+
+```powershell
+git push --force origin main
+```
