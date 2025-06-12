@@ -10,13 +10,17 @@ from sklearn.ensemble import RandomForestClassifier
 from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import classification_report, accuracy_score, ConfusionMatrixDisplay
 import seaborn as sns
+import matplotlib
+matplotlib.use('Agg')  # Use a non-interactive backend for script environments
 import matplotlib.pyplot as plt
+from gnews import GNews
+from datetime import timedelta, date
 
 # Parameters
-NEWS_API_KEY = "a7f3930774df422f89548bc580f2abea"
+NEWS_API_KEY = "abe68bc5c29ee58b31c7ebbcb07b1290"
 TICKER = "AAPL"
-START_DATE = "2025-05-11"
-END_DATE = "2025-06-10"
+START_DATE = "2023-06-12"   # 2 years before today
+END_DATE = "2025-06-11"     # Keep end date as before
 QUERY = "Apple"
 
 # 1. Fetch stock data
@@ -27,16 +31,49 @@ df_price['pct_change'] = df_price['Close'].pct_change() * 100
 df_price.reset_index(inplace=True)
 df_price['date'] = pd.to_datetime(df_price['Date']).dt.date
 
-# 2. Fetch news headlines from NewsAPI
-newsapi = NewsApiClient(api_key=NEWS_API_KEY)
-all_articles = newsapi.get_everything(q=QUERY, from_param=START_DATE, to=END_DATE, language='en', sort_by='relevancy', page_size=100)
-articles = all_articles['articles']
+# 2. Fetch news headlines using GNews (instead of NewsAPI)
+gnews = GNews(language='en', country='US', max_results=100)
+all_articles = []
+
+def daterange(start_date, end_date, step_days=30):
+    for n in range(0, (end_date - start_date).days, step_days):
+        yield start_date + timedelta(n), min(start_date + timedelta(n + step_days), end_date)
+
+start_dt = pd.to_datetime(START_DATE).date()
+end_dt = pd.to_datetime(END_DATE).date()
+
+for start, end in daterange(start_dt, end_dt, step_days=30):
+    articles = gnews.get_news(QUERY)
+    for article in articles:
+        published = article.get('published date')
+        if hasattr(published, 'date'):
+            art_date = published.date()
+        elif isinstance(published, str):
+            try:
+                art_date = pd.to_datetime(published).date()
+            except Exception:
+                art_date = None
+        else:
+            art_date = None
+        if art_date and (start <= art_date <= end):
+            all_articles.append(article)
+
 data = []
-for article in articles:
-    title = article['title']
-    date = article['publishedAt'][:10]
-    data.append({'date': date, 'headline': title})
+for article in all_articles:
+    title = article.get('title', '')
+    published = article.get('published date')
+    if hasattr(published, 'date'):
+        date_val = published.date()
+    elif isinstance(published, str):
+        try:
+            date_val = pd.to_datetime(published).date()
+        except Exception:
+            date_val = None
+    else:
+        date_val = None
+    data.append({'date': date_val, 'headline': title})
 df_sentiment = pd.DataFrame(data)
+df_sentiment = df_sentiment.dropna(subset=['date'])
 df_sentiment['date'] = pd.to_datetime(df_sentiment['date']).dt.date
 
 # 3. Sentiment analysis on headlines
@@ -82,13 +119,15 @@ plt.title('Daily Avg Sentiment Score (bar) vs. Stock Price % Change (line)')
 fig.tight_layout()
 fig.autofmt_xdate()
 fig.legend(loc='upper left', bbox_to_anchor=(0.1, 0.9))
-plt.show()
+plt.savefig('sentiment_vs_stock.png')
+plt.close()
+print('Saved plot: sentiment_vs_stock.png')
 
 # 9. Train and Evaluate RandomForest & Logistic Regression Models
 sentiment_cols = [col for col in df_merged.columns if col.startswith('sentiment_')]
 X = df_merged[sentiment_cols]
 y = df_merged['pct_change_label']
-X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.85, random_state=42)
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.7, random_state=42)
 rf = RandomForestClassifier(random_state=42)
 rf.fit(X_train, y_train)
 y_pred_rf = rf.predict(X_test)
@@ -107,7 +146,9 @@ axes[0].set_title('RandomForest Confusion Matrix')
 ConfusionMatrixDisplay.from_estimator(lr, X_test, y_test, ax=axes[1], cmap='Greens', colorbar=False)
 axes[1].set_title('Logistic Regression Confusion Matrix')
 plt.tight_layout()
-plt.show()
+plt.savefig('confusion_matrices.png')
+plt.close()
+print('Saved plot: confusion_matrices.png')
 
 # 10. Visualize Correct vs Wrong Predictions
 results = X_test.copy()
@@ -123,14 +164,19 @@ plt.title('RandomForest: Correct vs Wrong Predictions')
 plt.xlabel('Prediction Correct?')
 plt.ylabel('Count')
 plt.xticks([0, 1], ['Wrong', 'Correct'])
-plt.show()
+plt.savefig('rf_correct_wrong.png')
+plt.close()
+print('Saved plot: rf_correct_wrong.png')
+
 plt.figure(figsize=(8, 4))
 sns.countplot(x='LR Correct', data=results, palette=['salmon', 'mediumseagreen'])
 plt.title('Logistic Regression: Correct vs Wrong Predictions')
 plt.xlabel('Prediction Correct?')
 plt.ylabel('Count')
 plt.xticks([0, 1], ['Wrong', 'Correct'])
-plt.show()
+plt.savefig('lr_correct_wrong.png')
+plt.close()
+print('Saved plot: lr_correct_wrong.png')
 
 
 
