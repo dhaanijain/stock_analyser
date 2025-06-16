@@ -4,6 +4,8 @@ from vaderSentiment.vaderSentiment import SentimentIntensityAnalyzer
 from general import logger
 import pandas as pd
 from krazy import postgres_utilities as pu
+import pandas as pd
+from sklearn.preprocessing import OneHotEncoder
 
 engine = connect_to_db()
 cur = engine.connect()
@@ -71,4 +73,17 @@ def merge_tables(ticker:str, start_date:str, end_date:str)->pd.DataFrame:
         update_dup=True
     )
     logger.debug('Stock prices updated with article count and sentiment score successfully')
+    
+# do one hot encoding on df_prices on sentiment column
+
+def one_hot_encode_sentiment(df_prices: pd.DataFrame) -> pd.DataFrame:
+    if 'sentiment' not in df_prices.columns:
+        print("Sentiment column not found in DataFrame.")
+        return df_prices
+    
+    encoder = OneHotEncoder(sparse_output=False, dtype=int)
+    sentiment_arr = encoder.fit_transform(df_prices[['sentiment_score']])
+    sentiment_df = pd.DataFrame(sentiment_arr, columns=encoder.get_feature_names_out(['sentiment_score']), index=df_prices.index)
+    
+    df_prices = pd.concat([df_prices, sentiment_df], axis=1)
     

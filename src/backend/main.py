@@ -5,13 +5,16 @@ from data_processing import sentiment_analysis
 from data_processing import merge_tables
 from data_handeling import stock_price_fetch_data_if_not_exists
 from data_analysis import visualize_stock_prices
+from data_processing import one_hot_encode_sentiment
+from data_analysis import data_analysis
 import time
 
+ticker = "AAPL"
+start_date = "2025-05-12"
+end_date = "2025-06-11"
 
 def main():
-    ticker = "AAPL"
-    start_date = "2025-05-12"
-    end_date = "2025-06-11"
+
     
     # df_price = stock_price_fetch_data(ticker, start_date, end_date)
     # stock_price_push_data(df_price)
@@ -25,10 +28,12 @@ def main():
     # sentiment_analysis(ticker, start_date, end_date)
     
     merge_tables(ticker, start_date, end_date) #includes call to groupby_all_articles
+    #TODO: Fix merge not working when previous functions are uncommented
+    
     # print(df_merged)
     print("run successfully")
+    data_analysis()
     
-    # visualize_stock_prices(df_price)
     
     
     
