@@ -14,46 +14,6 @@ import seaborn as sns
 import plotly.graph_objs as go
 import plotly.express as px
 
-
-
-
-# def visualize_stock_prices(df_price):
-#     import matplotlib.pyplot as plt
-
-#     df_price['date'] = pd.to_datetime(df_price['date'])
-#     df_price.set_index('date', inplace=True)
-
-#     # Smooth the sentiment score for trend clarity
-#     df_price['sentiment_score_smooth'] = df_price['sentiment_score'].rolling(window=3).mean()
-
-#     fig, ax1 = plt.subplots(figsize=(14, 7))
-
-#     # Plot stock price
-#     ax1.plot(df_price.index, df_price['Close'], label='Stock Price', color='blue')
-#     ax1.set_ylabel('Stock Price', color='blue')
-#     ax1.tick_params(axis='y', labelcolor='blue')
-
-#     # Plot article count if exists
-#     if 'article_count' in df_price.columns:
-#         df_price['article_count'].plot(kind='bar', ax=ax1, alpha=0.2, width=0.5, label='Article Count', color='gray')
-
-#     # Plot sentiment on second Y-axis
-#     ax2 = ax1.twinx()
-#     if 'sentiment_score_smooth' in df_price.columns:
-#         ax2.plot(df_price.index, df_price['sentiment_score_smooth'], label='Sentiment Score (Smoothed)', color='orange')
-#     else:
-#         print("sentiment_score column not found.")
-
-#     ax2.set_ylabel('Sentiment Score', color='orange')
-#     ax2.tick_params(axis='y', labelcolor='orange')
-
-#     # Labels, legend, grid
-#     plt.title('Historical Stock Price vs Sentiment Trend')
-#     fig.tight_layout()
-#     fig.legend(loc='upper left', bbox_to_anchor=(0.1, 0.9))
-
-#     return fig
-
     
 def data_analysis():
     ticker = "AAPL"
@@ -364,3 +324,196 @@ def plot_sentiment_spikes(df_price):
     )
     fig.show()
     return fig
+
+# write a function to train random forest model on the stock_prices table with columns date, sentiment_score, article_count and Close price
+from sklearn.ensemble import RandomForestRegressor
+def train_random_forest_model(df_price):
+    df = df_price.copy()
+    df['date'] = pd.to_datetime(df['date'])
+    df.set_index('date', inplace=True)
+
+    # Prepare features and target
+    X = df[['sentiment_score', 'article_count']]
+    y = df['Close']
+
+    # Train Random Forest model
+    model = RandomForestRegressor(n_estimators=100, random_state=42)
+    model.fit(X, y)
+
+    # Feature importance
+    feature_importances = model.feature_importances_
+    importance_df = pd.DataFrame({
+        'Feature': X.columns,
+        'Importance': feature_importances
+    }).sort_values(by='Importance', ascending=False)
+
+    # add accuracy score
+    accuracy = model.score(X, y)
+    print(f"Model Accuracy: {accuracy:.2f}")
+    
+    #add f1 score
+    from sklearn.metrics import mean_squared_error
+    mse = mean_squared_error(y, model.predict(X))
+    print(f"Mean Squared Error: {mse:.2f}")
+
+    print("Model trained successfully.")
+    print("Feature Importances:")
+    print(importance_df)
+
+    return model, importance_df, mse, accuracy
+
+def train_logistic_regression_model(df_price):
+    from sklearn.linear_model import LogisticRegression
+    from sklearn.model_selection import train_test_split
+    from sklearn.metrics import accuracy_score, classification_report
+
+    df = df_price.copy()
+    df['date'] = pd.to_datetime(df['date'])
+    df.set_index('date', inplace=True)
+
+    # Prepare features and target
+    x = df[['sentiment_score', 'article_count']]
+    y = (df['Close'] > df['Close'].shift(1)).astype(int)  # Binary target: 1 if price increased, else 0
+
+    # Split data into training and testing sets
+    X_train, X_test, y_train, y_test = train_test_split(x, y, test_size=0.2, random_state=42)
+
+    # Train Logistic Regression model
+    model = LogisticRegression(random_state=42)
+    X_train = X_train.dropna()
+    y_train = y_train.loc[X_train.index]  # keep y_train aligned
+    model.fit(X_train, y_train)
+
+    # Predictions and evaluation
+    y_pred = model.predict(X_test)
+    accuracy = accuracy_score(y_test, y_pred)
+    report = classification_report(y_test, y_pred)
+
+    print(f"Model Accuracy: {accuracy:.2f}")
+    print("Classification Report:")
+    print(report)
+
+    return model, accuracy, report
+
+
+def train_xgboost_model(df_price):
+    import xgboost as xgb
+    from sklearn.model_selection import train_test_split
+    from sklearn.metrics import mean_squared_error
+    from sklearn.metrics import accuracy_score
+
+    df = df_price.copy()
+    df['date'] = pd.to_datetime(df['date'])
+    df.set_index('date', inplace=True)
+
+    # Prepare features and target
+    X = df[['sentiment_score', 'article_count']]
+    y = df['Close']
+
+    # Split data into training and testing sets
+    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+
+    # Train XGBoost model
+    model = xgb.XGBRegressor(n_estimators=100, learning_rate=0.1, random_state=42)
+    model.fit(X_train, y_train)
+
+    # Predictions and evaluation
+    y_pred = model.predict(X_test)
+    mse = mean_squared_error(y_test, y_pred)
+    
+    # accuracy = model.score(X_test, y_test)
+    # accuracy = accuracy_score(y_test, y_pred)
+    
+    print(f"XGBoost Model Mean Squared Error: {mse:.2f}")
+
+    from sklearn.metrics import r2_score
+    r2 = r2_score(y_test, y_pred)
+    print(f"XGBoost Model R^2 Score: {r2:.2f}")
+
+    return model, mse, r2
+
+    
+#write the code to compare models and select the best one based on accuracy and mean squared error by calling the functions above
+def compare_models(df_price):
+    print("Training Logistic Regression Model...")
+    lr_model, lr_accuracy, lr_report = train_logistic_regression_model(df_price)
+    
+    print("\nTraining Random Forest Model...")
+    rf_model, rf_importance, rf_mse, rf_accuracy = train_random_forest_model(df_price)
+    
+    print("\nTraining XGBoost Model...")
+    xgb_model, xgb_mse, xgb_r2 = train_xgboost_model(df_price)
+
+    # Compare models based on accuracy and MSE
+    print("\nModel Comparison:")
+    print(f"Logistic Regression - Accuracy: {lr_accuracy:.2f}")
+    print(f"Random Forest - Accuracy: {rf_accuracy:.2f}, MSE: {rf_mse:.2f}")
+    print(f"XGBoost - R^2 Score: {xgb_r2:.2f}, MSE: {xgb_mse:.2f}")
+
+    # Select the best model based on criteria
+    best_model = None
+    if rf_accuracy > lr_accuracy and rf_mse < xgb_mse:
+        best_model = "Random Forest"
+    elif xgb_r2 > rf_accuracy and xgb_mse < rf_mse:
+        best_model = "XGBoost"
+    else:
+        best_model = "Logistic Regression"
+
+    print(f"\nBest Model Selected: {best_model}")
+
+    # Save all trained models for later use
+    import joblib
+    import os
+    models_dir = os.path.join(os.path.dirname(__file__), 'models')
+    os.makedirs(models_dir, exist_ok=True)
+    joblib.dump(lr_model, os.path.join(models_dir, 'logistic_regression_model.pkl'))
+    joblib.dump(rf_model, os.path.join(models_dir, 'random_forest_model.pkl'))
+    joblib.dump(xgb_model, os.path.join(models_dir, 'xgboost_model.pkl'))
+
+def predict_stock_price_for_ticker_date_df(df_price, ticker, date):
+    """
+    Predict the stock price for a given ticker and date using the best available model.
+    If the date is not present in df_price, use the most recent available data for prediction.
+    """
+    import joblib
+    import os
+    import pandas as pd
+
+    df = df_price.copy()
+    df['date'] = pd.to_datetime(df['date'])
+    df = df[df['ticker'] == ticker] if 'ticker' in df.columns else df
+    df.set_index('date', inplace=True)
+
+    # If the date is not in the DataFrame, use the most recent available row
+    if pd.to_datetime(date) in df.index:
+        X = df.loc[[pd.to_datetime(date)], ['sentiment_score', 'article_count']]
+    else:
+        # Use the latest available data for the ticker
+        latest_row = df.sort_index().iloc[[-1]][['sentiment_score', 'article_count']]
+        X = latest_row
+        print(f"Date {date} not found for ticker {ticker}. Using latest available data from {latest_row.index[0].strftime('%Y-%m-%d')} for prediction.")
+
+    # Determine the best model (same logic as compare_models)
+    models_dir = os.path.join(os.path.dirname(__file__), 'models')
+    model_paths = [
+        ('xgboost_model.pkl', 'XGBoost'),
+        ('random_forest_model.pkl', 'Random Forest'),
+        ('logistic_regression_model.pkl', 'Logistic Regression')
+    ]
+    model = None
+    model_name = None
+    for fname, name in model_paths:
+        path = os.path.join(models_dir, fname)
+        if os.path.exists(path):
+            model = joblib.load(path)
+            model_name = name
+            break
+    if model is None:
+        raise FileNotFoundError("No trained model found. Please run compare_models first.")
+
+    # Predict using the selected model
+    prediction = model.predict(X)
+    print(f"Predicted by {model_name} model for ticker {ticker}.")
+    return prediction[0]  # Return the predicted price
+
+
