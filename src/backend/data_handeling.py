@@ -69,10 +69,10 @@ def stock_price_push_data(df_price):
 # 3. write a function to so that if the data is already for the ticker and date range, it will not fetch the data again
 def stock_price_fetch_data_if_not_exists(ticker, start_date, end_date):
     # 1. Get all existing dates for the ticker in the requested range
-    query = text('''
+    query = text(f'''
         SELECT date FROM stock_analyzer.stock_prices 
-        WHERE stock_code = :ticker 
-        AND date BETWEEN :start_date AND :end_date
+        WHERE stock_code = {ticker} 
+        AND date BETWEEN {start_date} AND {end_date}
     ''')
     existing_dates = pd.read_sql_query(query, engine, params={'ticker': ticker, 'start_date': start_date, 'end_date': end_date})
     existing_dates_set = set(existing_dates['date'].astype(str))

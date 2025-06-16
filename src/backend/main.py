@@ -14,19 +14,18 @@ def main():
     
     df_price = stock_price_fetch_data(ticker, start_date, end_date)
     stock_price_push_data(df_price)
-    stock_price_fetch_data_if_not_exists(ticker, start_date, end_date)
+    # stock_price_fetch_data_if_not_exists(ticker, start_date, end_date)
 
     
     # df_articles = all_articles_fetch_data(ticker, start_date, end_date)
     # all_articles_push_data(df_articles)
     
-    # time.sleep(5)  # Ensure the data is pushed before sentiment analysis
     
-    # sentiment_analysis(ticker, start_date, end_date)
+    sentiment_analysis(ticker, start_date, end_date)
     
-    # df_merged = merge_tables(ticker, start_date, end_date) #includes call to groupby_all_articles
+    merge_tables(ticker, start_date, end_date) #includes call to groupby_all_articles
     # print(df_merged)
-    # print("run successfully")
+    print("run successfully")
     
     
     
