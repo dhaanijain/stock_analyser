@@ -22,6 +22,7 @@ from krazy import postgres_utilities as pu
 import numpy as np
 from general import logger
 
+
 engine = connect_to_db()
 cur = engine.connect()
 
@@ -48,7 +49,7 @@ def stock_price_fetch_data(ticker, start_date, end_date):
     logger.debug('Stock prices fectched successfully')
     return df_price
 
-#2.push stock data to database
+# 2.push stock data to database
 def stock_price_push_data(df_price):
     
     df_price['unique_key'] = df_price['Date'].astype(str)
@@ -65,7 +66,34 @@ def stock_price_push_data(df_price):
     logger.debug('Stock prices pushed to database successfully')
     
     
-# 3. Fetch all articles using GNews    
+# 3. write a function to so that if the data is already for the ticker and date range, it will not fetch the data again
+def stock_price_fetch_data_if_not_exists(ticker, start_date, end_date):
+    # 1. Get all existing dates for the ticker in the requested range
+    query = text('''
+        SELECT date FROM stock_analyzer.stock_prices 
+        WHERE stock_code = :ticker 
+        AND date BETWEEN :start_date AND :end_date
+    ''')
+    existing_dates = pd.read_sql_query(query, engine, params={'ticker': ticker, 'start_date': start_date, 'end_date': end_date})
+    existing_dates_set = set(existing_dates['date'].astype(str))
+
+    # 2. Build the full set of requested dates
+    all_dates = pd.date_range(start=start_date, end=end_date).strftime('%Y-%m-%d')
+    missing_dates = [d for d in all_dates if d not in existing_dates_set]
+
+    if not missing_dates:
+        logger.debug(f"All data for {ticker} from {start_date} to {end_date} already exists in the database.")
+        return pd.DataFrame()  # Nothing to fetch
+
+    # 3. Fetch only for missing dates (in one go, or in chunks if needed)
+    # Here, we fetch for the min/max of missing dates for efficiency
+    min_missing = min(missing_dates)
+    max_missing = max(missing_dates)
+    logger.debug(f"Fetching data for {ticker} from {min_missing} to {max_missing} (missing dates only).")
+    return stock_price_fetch_data(ticker, min_missing, max_missing)
+    
+    
+# 4. Fetch all articles using GNews    
 def all_articles_fetch_data(query, start_dt, end_dt):
     
     all_articles = []
@@ -99,10 +127,13 @@ def all_articles_fetch_data(query, start_dt, end_dt):
     logger.debug('All articles fetched successfully')
     return all_articles
 
-# 4. Push all articles to database
+# 5. Push all articles to database
 def all_articles_push_data(all_articles):
-    
-    all_articles['unique_key'] = all_articles['date'].astype(str) 
+    # make the unique key column on the basis of headline, description, date and stock_code
+    all_articles['unique_key'] = all_articles['headline'].astype(str) + '_' + \
+                                all_articles['date'].astype(str) + '_' + \
+                                all_articles['stock_code'].astype(str)
+    # all_articles['unique_key'] = all_articles['date'].astype(str) 
     all_articles['sentiment_score'] = np.nan
     pu.dbase_col_checker_adder("stock_analyzer", 'stock_articles', all_articles, engine, speak=True)
     pu.dbase_writer_dup_handled(
@@ -112,19 +143,21 @@ def all_articles_push_data(all_articles):
         'stock_articles',
         'unique_key',
         files_processed=None,
-        update_dup=True
+        update_dup=False
     )
     logger.debug('All articles pushed to database successfully')
 
-#5. pull stock prices from database    
+# 6. pull stock prices from database    
 def fetch_prices(ticker:str, start_date:str, end_date:str)->pd.DataFrame:
     df = pd.read_sql_query(f'''select * from stock_analyzer.stock_prices sp where sp.stock_code ~* 
                            '{ticker}' and sp."date" between '{start_date}' and '{end_date}';''', engine)    
     return df
 
-#6. pull articles from database
+# 7. pull articles from database
 def articles_fetch_data(ticker:str, start_date:str, end_date:str)->pd.DataFrame:
     df_articles = pd.read_sql_query(f'''select * from stock_analyzer.stock_articles sa 
                                     where sa.stock_code ~* '{ticker}' 
                                     and sa."date" between '{start_date}' and '{end_date}';''', engine)
     return df_articles
+
+

@@ -19,6 +19,7 @@ def sentiment_analysis(ticker:str, start_date:str, end_date:str)->bool:
                         and '{end_date}' 
                         and sa.sentiment_score is null;
                     ''', engine)
+    print(f"Number of articles fetched for sentiment analysis: {len(df_articles)}")
     # do sentimant analysis on df_articles and save the score in column 'sentiment_score'
     analyzer = SentimentIntensityAnalyzer()
     df_articles['sentiment_score'] = df_articles['headline'].apply(lambda x: analyzer.polarity_scores(x)['compound'])
@@ -34,6 +35,7 @@ def sentiment_analysis(ticker:str, start_date:str, end_date:str)->bool:
         )
         return True
     except Exception as e:
+        print(f"Error in pushing sentiment score: {e}")
         logger.error(f"Error in pushing sentiment score: {e}")
         return False
 
@@ -49,4 +51,21 @@ def merge_tables(ticker:str, start_date:str, end_date:str)->pd.DataFrame:
     df_articles = groupby_all_articles(ticker, start_date, end_date)
     df_prices = fetch_prices(ticker, start_date, end_date)
     df_merged = pd.merge(df_prices, df_articles, on=['stock_code','date'], how='left')
-    return df_merged
+    # df_merged.to_sql(
+    #     'temp_table_stock_prices',
+    #     engine,
+    #     if_exists='replace',
+    #     index=False, schema='stock_analyzer'
+    # )
+    logger.debug('Updating sentiment score in stock prices table')
+    pu.dbase_writer_dup_handled(
+        engine,
+        df_merged,
+        'stock_analyzer',
+        'stock_prices',
+        'row_id',
+        files_processed=None,
+        update_dup=True
+    )
+    logger.debug('Stock prices updated with article count and sentiment score successfully')
+    
