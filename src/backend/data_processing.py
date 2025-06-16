@@ -50,7 +50,10 @@ def groupby_all_articles(ticker:str, start_date:str, end_date:str)->pd.DataFrame
 def merge_tables(ticker:str, start_date:str, end_date:str)->pd.DataFrame:
     df_articles = groupby_all_articles(ticker, start_date, end_date)
     df_prices = fetch_prices(ticker, start_date, end_date)
-    df_merged = pd.merge(df_prices, df_articles, on=['stock_code','date'], how='left')
+    df_prices.drop(columns=[
+        'sentiment_score', 'article_count'
+    ], inplace=True)
+    df_merged = pd.merge(df_prices, df_articles, on=['stock_code','date'], how='left').reset_index()
     # df_merged.to_sql(
     #     'temp_table_stock_prices',
     #     engine,
@@ -60,7 +63,7 @@ def merge_tables(ticker:str, start_date:str, end_date:str)->pd.DataFrame:
     logger.debug('Updating sentiment score in stock prices table')
     pu.dbase_writer_dup_handled(
         engine,
-        df_merged,
+        df_merged[['row_id', 'article_count', 'sentiment_score']],
         'stock_analyzer',
         'stock_prices',
         'row_id',
