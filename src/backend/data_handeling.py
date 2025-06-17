@@ -2,12 +2,6 @@ import yfinance as yf
 import pandas as pd
 import re
 import datetime
-from vaderSentiment.vaderSentiment import SentimentIntensityAnalyzer
-from sklearn.preprocessing import OneHotEncoder
-from sklearn.model_selection import train_test_split
-from sklearn.ensemble import RandomForestClassifier
-from sklearn.linear_model import LogisticRegression
-from sklearn.metrics import classification_report, accuracy_score, ConfusionMatrixDisplay
 import seaborn as sns
 import matplotlib
 matplotlib.use('Agg')  # Use a non-interactive backend for script environments

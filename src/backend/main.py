@@ -29,7 +29,6 @@ def main():
     
     logger.debug('Combining stock prices and articles')
     merge_tables(ticker, start_date, end_date) #includes call to groupby_all_articles
-    #TODO: Fix merge not working when previous functions are uncommented
     
     # print(df_merged)
     print("run successfully")
