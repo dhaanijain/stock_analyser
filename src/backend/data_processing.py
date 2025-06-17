@@ -6,6 +6,7 @@ import pandas as pd
 from krazy import postgres_utilities as pu
 import pandas as pd
 from sklearn.preprocessing import OneHotEncoder
+from general import upsert_postgres_from_dataframe
 
 engine = connect_to_db()
 cur = engine.connect()
@@ -17,24 +18,34 @@ def sentiment_analysis(ticker:str, start_date:str, end_date:str)->bool:
                         stock_analyzer.stock_articles sa 
                     where 
                         sa.stock_code ~* '{ticker}' 
-                        and sa."date" between '{start_date}' 
+                        and sa."published_date" between '{start_date}' 
                         and '{end_date}' 
-                        and sa.sentiment_score is null;
+                        and sa.sentiment_score is null or sa.sentiment_score = 'NaN';
                     ''', engine)
     print(f"Number of articles fetched for sentiment analysis: {len(df_articles)}")
     # do sentimant analysis on df_articles and save the score in column 'sentiment_score'
     analyzer = SentimentIntensityAnalyzer()
     df_articles['sentiment_score'] = df_articles['headline'].apply(lambda x: analyzer.polarity_scores(x)['compound'])
     try:
-        pu.dbase_writer_dup_handled(
+        upsert_postgres_from_dataframe(
             engine,
-            df_articles[['sentiment_score', 'row_id']],
+            df_articles[['row_id', 'sentiment_score']],
             'stock_analyzer',
             'stock_articles',
             'row_id',
-            files_processed=None,
-            update_dup=True
+            mode="upsert",      # or "insert"/"update" as needed
+            add_cols=True,       # set as needed
+            alter_cols=True      # set as needed
         )
+        # pu.dbase_writer_dup_handled(
+        #     engine,
+        #     df_articles[['sentiment_score', 'row_id']],
+        #     'stock_analyzer',
+        #     'stock_articles',
+        #     'row_id',
+        #     files_processed=None,
+        #     update_dup=True
+        # )
         return True
     except Exception as e:
         print(f"Error in pushing sentiment score: {e}")
@@ -56,21 +67,18 @@ def merge_tables(ticker:str, start_date:str, end_date:str)->pd.DataFrame:
         'sentiment_score', 'article_count'
     ], inplace=True)
     df_merged = pd.merge(df_prices, df_articles, on=['stock_code','date'], how='left').reset_index()
-    # df_merged.to_sql(
-    #     'temp_table_stock_prices',
-    #     engine,
-    #     if_exists='replace',
-    #     index=False, schema='stock_analyzer'
-    # )
+    df_merged['sentiment_score'] = df_merged['sentiment_score'].astype(float)
+    df_merged['article_count'] = df_merged['article_count'].astype(float)
     logger.debug('Updating sentiment score in stock prices table')
-    pu.dbase_writer_dup_handled(
+    upsert_postgres_from_dataframe(
         engine,
-        df_merged[['row_id', 'article_count', 'sentiment_score']],
+        df_merged,
         'stock_analyzer',
         'stock_prices',
         'row_id',
-        files_processed=None,
-        update_dup=True
+        mode="upsert",      # or "insert"/"update" as needed
+        add_cols=True,       # set as needed
+        alter_cols=True      # set as needed
     )
     logger.debug('Stock prices updated with article count and sentiment score successfully')
     
@@ -86,4 +94,9 @@ def one_hot_encode_sentiment(df_prices: pd.DataFrame) -> pd.DataFrame:
     sentiment_df = pd.DataFrame(sentiment_arr, columns=encoder.get_feature_names_out(['sentiment_score']), index=df_prices.index)
     
     df_prices = pd.concat([df_prices, sentiment_df], axis=1)
-    
+
+def articles_fetch_data(ticker:str, start_date:str, end_date:str)->pd.DataFrame:
+    df_articles = pd.read_sql_query(f'''select * from stock_analyzer.stock_articles sa 
+                                    where sa.stock_code ~* '{ticker}' 
+                                    and sa."published_date" between '{start_date}' and '{end_date}';''', engine)
+    return df_articles

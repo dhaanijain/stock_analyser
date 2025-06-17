@@ -81,9 +81,9 @@ def data_analysis():
 def plot_sentiment_heatmap_plotly(df_price):
 
     df = df_price.copy()
-    df['date'] = pd.to_datetime(df['date'])
-    df['day'] = df['date'].dt.day
-    df['month'] = df['date'].dt.month_name()
+    df['time_stamp'] = pd.to_datetime(df['time_stamp'])
+    df['day'] = df['time_stamp'].dt.day
+    df['month'] = df['time_stamp'].dt.month_name()
     # Only use months present in the data
     months_present = df['month'].unique().tolist()
     # Create the pivot table
@@ -117,10 +117,10 @@ import plotly.graph_objs as go
 def plot_area_chart(df_price):
     import pandas as pd
     df = df_price.copy()
-    df['date'] = pd.to_datetime(df['date'])
-    full_range = pd.date_range(df['date'].min(), df['date'].max())
-    df = df.set_index('date').reindex(full_range).reset_index().rename(columns={'index': 'date'})
-    df.set_index('date', inplace=True)
+    df['time_stamp'] = pd.to_datetime(df['time_stamp'])
+    full_range = pd.date_range(df['time_stamp'].min(), df['time_stamp'].max())
+    df = df.set_index('time_stamp').reindex(full_range).reset_index().rename(columns={'index': 'time_stamp'})
+    df.set_index('time_stamp', inplace=True)
     print("running plot_area_chart (plotly version)")
 
     # Exclude NaN values for min calculation
@@ -210,8 +210,8 @@ import plotly.graph_objs as go
 
 def plot_gradient_sentiment_overlay(df_price):
     df = df_price.copy()
-    df['date'] = pd.to_datetime(df['date'])
-    df.set_index('date', inplace=True)
+    df['time_stamp'] = pd.to_datetime(df['time_stamp'])
+    df.set_index('time_stamp', inplace=True)
     sentiment = df['sentiment_score'].rolling(3, min_periods=1).mean()
 
     # Normalize sentiment for color mapping
@@ -275,15 +275,15 @@ def plot_interactive(df_price):
     import pandas as pd
     fig = go.Figure()
 
-    # Ensure date is datetime and fill missing dates
+    # Ensure time_stamp is datetime and fill missing dates
     df = df_price.copy()
-    df['date'] = pd.to_datetime(df['date'])
-    full_range = pd.date_range(df['date'].min(), df['date'].max())
-    df = df.set_index('date').reindex(full_range).reset_index().rename(columns={'index': 'date'})
+    df['time_stamp'] = pd.to_datetime(df['time_stamp'])
+    full_range = pd.date_range(df['time_stamp'].min(), df['time_stamp'].max())
+    df = df.set_index('time_stamp').reindex(full_range).reset_index().rename(columns={'index': 'time_stamp'})
 
     # Add Close Price line (primary y-axis)
     fig.add_trace(go.Scatter(
-        x=df['date'],
+        x=df['time_stamp'],
         y=df['Close'],
         mode='lines+markers',
         name='Close Price',
@@ -294,7 +294,7 @@ def plot_interactive(df_price):
 
     # Add Sentiment Score line (secondary y-axis)
     fig.add_trace(go.Scatter(
-        x=df['date'],
+        x=df['time_stamp'],
         y=df['sentiment_score'],
         mode='lines+markers',
         name='Sentiment Score',
@@ -337,7 +337,7 @@ def plot_sentiment_spikes(df_price):
 
     # Sentiment Score line
     fig.add_trace(go.Scatter(
-        x=df['date'],
+        x=df['time_stamp'],
         y=df['sentiment_score'],
         mode='lines+markers',
         name='Sentiment Score',
@@ -346,7 +346,7 @@ def plot_sentiment_spikes(df_price):
 
     # Spikes as red markers
     fig.add_trace(go.Scatter(
-        x=spikes['date'],
+        x=spikes['time_stamp'],
         y=spikes['sentiment_score'],
         mode='markers',
         name='Spikes',
