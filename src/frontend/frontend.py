@@ -3,6 +3,9 @@ import pandas as pd
 from datetime import datetime, timedelta
 import sys
 import os
+import subprocess
+import sqlite3
+
 
 # Add backend directory to path
 sys.path.append(os.path.join(os.path.dirname(__file__), '..', 'backend'))
@@ -13,12 +16,14 @@ from data_handeling import (
     all_articles_push_data,
     fetch_prices
 )
+
+from general import connect_to_db
 from data_processing import sentiment_analysis, merge_tables
-from data_analysis import plot_area_chart
+from data_analysis import plot_area_chart, plot_sentiment_heatmap_plotly, plot_gradient_sentiment_overlay, plot_interactive, plot_sentiment_spikes
 
 # Page config
 st.set_page_config(
-    page_title="Stock Analyzer",
+    page_title="STOXiE.ai",
     page_icon="📈",
     layout="wide"
 )
@@ -45,7 +50,7 @@ st.markdown("""
 
 # Sidebar inputs
 with st.sidebar:
-    st.title("Stock Analyzer")
+    st.title("STOXiE.ai")
     
     # Stock Input
     ticker = st.text_input("Stock Ticker", "AAPL").upper()
@@ -74,29 +79,60 @@ with st.sidebar:
 # Main content area
 if analyze_button:
     try:
-        with st.spinner("Fetching and processing stock data..."):
-            # Fetch and push stock data
-            df_price = stock_price_fetch_data(ticker, start_date, end_date)
+        with st.spinner("Running backend data pipeline..."):
+            # Run main.py to fetch/process data and update DB
+            result = subprocess.run([
+                sys.executable, os.path.join(os.path.dirname(__file__), '..', 'backend', 'main.py')
+            ], capture_output=True, text=True)
+            if result.returncode != 0:
+                st.error(f"Backend error: {result.stderr}")
+                st.stop()
+            else:
+                st.success("Data pipeline completed. Fetching results...")
+        
+        with st.spinner("Fetching processed data from database..."):
+            # Connect to SQLite database (adjust path if needed)
+            db_path = os.path.join(os.path.dirname(__file__), '..', 'backend', 'stock_data.db')
+            # conn = sqlite3.connect(db_path)
+            conn = connect_to_db()
+            # Fetch price data
+            query_price = f"""
+                SELECT * FROM "stock_analyzer".stock_prices WHERE stock_code = '{ticker}' AND "date" BETWEEN '{start_date}' AND '{end_date}' ORDER BY date;
+            """
+            df_price = pd.read_sql_query(query_price, conn)
+            
             if not df_price.empty:
-                stock_price_push_data(df_price)
-                st.success("Stock price data processed successfully!")
+                st.success("Stock price data loaded from database!")
+                df_price.sort_values(by='date', inplace=True, ascending=True)
+                df_price = df_price.loc[df_price['sentiment_score'].notna()]
             else:
                 st.error("No stock price data available for the selected period.")
                 st.stop()
-            
+            # Fetch articles if needed
             if include_articles:
-                with st.spinner("Fetching and processing news articles..."):
-                    df_articles = all_articles_fetch_data(ticker, start_date, end_date)
-                    if not df_articles.empty:
-                        all_articles_push_data(df_articles)
-                        st.success("News articles processed successfully!")
-                    else:
-                        st.warning("No news articles found for the selected period.")
+                query_articles = f"""
+                    SELECT * FROM stock_analyzer.stock_articles WHERE stock_code = '{ticker}' AND "published_date" BETWEEN '{start_date}' AND '{end_date}' ORDER BY published_date DESC
+                """
+                df_articles = pd.read_sql_query(query_articles, conn)
+                if not df_articles.empty:
+                    st.success("News articles loaded from database!")
+                else:
+                    st.warning("No news articles found for the selected period.")
+            # conn.close()
+            
+            # if include_articles:
+            #     with st.spinner("Fetching and processing news articles..."):
+            #         # df_articles = all_articles_fetch_data(ticker, start_date, end_date)
+            #         if not df_articles.empty:
+            #             all_articles_push_data(df_articles)
+            #             st.success("News articles processed successfully!")
+            #         else:
+            #             st.warning("No news articles found for the selected period.")
                 
-                with st.spinner("Analyzing sentiment..."):
-                    sentiment_analysis(ticker, start_date, end_date)
-                    merge_tables(ticker, start_date, end_date)
-                    st.success("Sentiment analysis completed!")
+            #     with st.spinner("Analyzing sentiment..."):
+            #         sentiment_analysis(ticker, start_date, end_date)
+            #         merge_tables(ticker, start_date, end_date)
+            #         st.success("Sentiment analysis completed!")
             
             # Display results
             st.title(f"{ticker} Stock Analysis")
@@ -147,7 +183,33 @@ if analyze_button:
                         st.warning("No sentiment analysis data available for visualization.")
                 except Exception as e:
                     st.warning(f"Could not generate sentiment analysis visualization: {str(e)}")
-                
+            
+            
+            # Price Chart
+            st.subheader("Stock Price vs Sentiment Area Chart")
+            fig_area = plot_area_chart(df_price)
+            st.plotly_chart(fig_area, use_container_width=True, key="area_chart")
+
+            # Sentiment Heatmap
+            st.subheader("Sentiment Score Heatmap by Day")
+            fig_heatmap = plot_sentiment_heatmap_plotly(df_price)
+            st.plotly_chart(fig_heatmap, use_container_width=True, key="heatmap")
+
+            # Gradient Sentiment Overlay
+            st.subheader("Stock Price with Sentiment Intensity Overlay")
+            fig_gradient = plot_gradient_sentiment_overlay(df_price)
+            st.plotly_chart(fig_gradient, use_container_width=True, key="gradient_overlay")
+
+            # Interactive Stock vs Sentiment Trend
+            st.subheader("Interactive Stock vs Sentiment Trend")
+            fig_interactive = plot_interactive(df_price)
+            st.plotly_chart(fig_interactive, use_container_width=True, key="interactive")
+
+            # Sentiment Spikes
+            st.subheader("Sentiment Spikes Over Time")
+            fig_spikes = plot_sentiment_spikes(df_price)
+            st.plotly_chart(fig_spikes, use_container_width=True, key="spikes")
+
     except Exception as e:
         st.error(f"An error occurred: {str(e)}")
 else:

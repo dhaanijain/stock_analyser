@@ -61,7 +61,7 @@ def groupby_all_articles(ticker:str, start_date:str, end_date:str)->pd.DataFrame
 
 #3. merge stock prices and articles
 def merge_tables(ticker:str, start_date:str, end_date:str)->pd.DataFrame:
-    df_articles = groupby_all_articles(ticker, start_date, end_date)
+    df_articles = groupby_all_articles(ticker, start_date, end_date).reset_index()
     df_prices = fetch_prices(ticker, start_date, end_date)
     df_prices.drop(columns=[
         'sentiment_score', 'article_count'

@@ -20,6 +20,8 @@ def data_analysis():
     start_date = "2025-05-12"
     end_date = "2025-06-11"
     df_price = fetch_prices(ticker, start_date, end_date)
+    df_price.sort_values(by='date', inplace=True, ascending=True)
+    df_price = df_price.loc[df_price['sentiment_score'].notna()]
     
     # df_price = one_hot_encode_sentiment(df_price)
     fig = plot_area_chart(df_price)
@@ -123,7 +125,7 @@ def plot_area_chart(df_price):
     fig.update_layout(
         title=dict(
             text="Stock Price vs Sentiment Area Chart",
-            font=dict(size=22, color='black'),
+            font=dict(size=22, color='white'),
             x=0.5
         ),
         xaxis=dict(

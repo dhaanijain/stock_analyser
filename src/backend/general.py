@@ -101,6 +101,12 @@ def upsert_postgres_from_dataframe(
     """
     try:
         print(f"[INFO] Starting sync to {schema}.{table_name} (mode={mode}, add_cols={add_cols}, alter_cols={alter_cols}, key_column={key_column})")
+        # Drop index column if present
+        if df.index.name is not None or 'index' in df.columns or 'level_0' in df.columns:
+            df = df.reset_index(drop=True)
+            for idx_col in ['index', 'level_0']:
+                if idx_col in df.columns:
+                    df = df.drop(columns=[idx_col])
         metadata = MetaData(schema=schema)
         table = Table(table_name, metadata, autoload_with=engine)
         db_columns = {col.name: col for col in table.columns}

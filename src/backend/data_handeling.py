@@ -68,35 +68,6 @@ def stock_price_push_data(df_price):
     logger.debug('Stock prices pushed to database successfully')
     
     
-# 3. write a function to so that if the data is already for the ticker and date range, it will not fetch the data again
-def stock_price_fetch_data_if_not_exists(ticker, start_date, end_date):
-    # 1. Get all existing time_stamps for the ticker in the requested range
-    query = text(f'''
-        SELECT time_stamp FROM stock_analyzer.stock_prices 
-        WHERE stock_code = :ticker 
-        AND time_stamp BETWEEN :start_date AND :end_date
-    ''')
-    existing_dates = pd.read_sql_query(query, engine, params={'ticker': ticker, 'start_date': start_date, 'end_date': end_date})
-    existing_dates_set = set(existing_dates['time_stamp'].astype(str))
-
-    # 2. Build the full set of requested dates
-    all_dates = pd.date_range(start=start_date, end=end_date).strftime('%Y-%m-%d')
-    missing_dates = [d for d in all_dates if d not in existing_dates_set]
-
-    if not missing_dates:
-        logger.debug(f"All data for {ticker} from {start_date} to {end_date} already exists in the database.")
-        return pd.DataFrame()  # Nothing to fetch
-
-    # 3. Fetch only for missing dates (in one go, or in chunks if needed)
-    # Here, we fetch for the min/max of missing dates for efficiency
-    min_missing = min(missing_dates)
-    max_missing = max(missing_dates)
-    logger.debug(f"Fetching data for {ticker} from {min_missing} to {max_missing} (missing dates only).")
-    
-
-    return stock_price_fetch_data(ticker, min_missing, max_missing)
-    
-    
 # 4. Fetch all articles using GNews    
 def all_articles_fetch_data(query, start_dt, end_dt):
     
@@ -114,23 +85,29 @@ def all_articles_fetch_data(query, start_dt, end_dt):
         articles = gnews.get_news(query)
         all_articles.extend(articles)
     all_articles = pd.DataFrame(all_articles)
-    all_articles.rename(columns={'title':'headline'}, inplace=True)
-    all_articles['link'] = all_articles['publisher'].apply(lambda x: dict(x).get('href'))
-    all_articles['title'] = all_articles['publisher'].apply(lambda x: dict(x).get('title'))
-    
-    try:
-        all_articles['published date'] = pd.to_datetime(all_articles['published date'])
-    except Exception as e:
-        all_articles['published date'] = pd.to_datetime(all_articles['published date'],format='%a, %d %b %Y %H:%M:%S GMT')    
-    
-    
-    all_articles['date'] = all_articles['published date'].dt.date
-    all_articles['stock_code'] = query
-    all_articles.drop(columns=['publisher'], inplace=True)
-    all_articles.rename(columns={'published date':'published_date'}, inplace=True)
+    if all_articles.empty==False:
+        all_articles.rename(columns={'title':'headline'}, inplace=True)
+        if 'publisher' in all_articles.columns:
+            all_articles['link'] = all_articles['publisher'].apply(lambda x: dict(x).get('href'))
+            all_articles['title'] = all_articles['publisher'].apply(lambda x: dict(x).get('title'))
+
         
-    logger.debug('All articles fetched successfully')
-    return all_articles
+        try:
+            all_articles['published date'] = pd.to_datetime(all_articles['published date'])
+        except Exception as e:
+            all_articles['published date'] = pd.to_datetime(all_articles['published date'],format='%a, %d %b %Y %H:%M:%S GMT')    
+        
+        
+        all_articles['date'] = all_articles['published date'].dt.date
+        all_articles['stock_code'] = query
+        all_articles.drop(columns=['publisher'], inplace=True)
+        all_articles.rename(columns={'published date':'published_date'}, inplace=True)
+            
+        logger.debug('All articles fetched successfully')
+        
+        return all_articles
+    else:
+        return None
 
 # 5. Push all articles to database
 def all_articles_push_data(all_articles):

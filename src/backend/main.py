@@ -3,7 +3,6 @@ from data_handeling import all_articles_fetch_data, stock_price_fetch_data
 from data_handeling import all_articles_push_data, stock_price_push_data
 from data_processing import sentiment_analysis
 from data_processing import merge_tables
-from data_handeling import stock_price_fetch_data_if_not_exists
 from data_processing import one_hot_encode_sentiment
 from data_analysis import data_analysis
 from general import logger
@@ -22,8 +21,11 @@ def main():
 
     logger.debug('Getting articles')
     df_articles = all_articles_fetch_data(ticker, start_date, end_date)
-    all_articles_push_data(df_articles)
-    
+    if df_articles is not None:
+        all_articles_push_data(df_articles)
+    else:
+        print("No articles found for the given date range.")
+        
     logger.debug('Running sentiment analysis')
     sentiment_analysis(ticker, start_date, end_date)
     
