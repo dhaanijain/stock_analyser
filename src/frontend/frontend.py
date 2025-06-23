@@ -101,10 +101,10 @@ if analyze_button:
             """
             df_price = pd.read_sql_query(query_price, conn)
             
+            
             if not df_price.empty:
                 st.success("Stock price data loaded from database!")
-                df_price.sort_values(by='date', inplace=True, ascending=True)
-                df_price = df_price.loc[df_price['sentiment_score'].notna()]
+                
             else:
                 st.error("No stock price data available for the selected period.")
                 st.stop()
@@ -154,9 +154,9 @@ if analyze_button:
                 else:
                     st.metric("Avg Sentiment", "N/A")
             
-            # Price Chart
-            st.subheader("Stock Price")
-            st.line_chart(df_price.set_index('date')['Close'])
+            # # Price Chart
+            # st.subheader("Stock Price")
+            # st.line_chart(df_price.set_index('date')['Close'])
             
             # Articles Table
             if include_articles and 'df_articles' in locals():
@@ -171,18 +171,18 @@ if analyze_button:
                 )
             
             # Sentiment Analysis
-            if include_sentiment:
-                st.subheader("Sentiment Analysis")
-                try:
-                    # Get the latest data from database
-                    df_price = fetch_prices(ticker, start_date, end_date)
-                    if not df_price.empty and 'sentiment_score' in df_price.columns:
-                        fig = plot_area_chart(df_price)
-                        st.plotly_chart(fig, use_container_width=True)
-                    else:
-                        st.warning("No sentiment analysis data available for visualization.")
-                except Exception as e:
-                    st.warning(f"Could not generate sentiment analysis visualization: {str(e)}")
+            # if include_sentiment:
+            #     st.subheader("Sentiment Analysis")
+            #     try:
+            #         # Get the latest data from database
+            #         df_price = fetch_prices(ticker, start_date, end_date)
+            #         if not df_price.empty and 'sentiment_score' in df_price.columns:
+            #             fig = plot_area_chart(df_price)
+            #             st.plotly_chart(fig, use_container_width=True)
+            #         else:
+            #             st.warning("No sentiment analysis data available for visualization.")
+            #     except Exception as e:
+            #         st.warning(f"Could not generate sentiment analysis visualization: {str(e)}")
             
             
             # Price Chart
@@ -194,7 +194,10 @@ if analyze_button:
             st.subheader("Sentiment Score Heatmap by Day")
             fig_heatmap = plot_sentiment_heatmap_plotly(df_price)
             st.plotly_chart(fig_heatmap, use_container_width=True, key="heatmap")
-
+            
+            df_price.sort_values(by='date', inplace=True, ascending=True)
+            # df_price = df_price.loc[df_price['sentiment_score'].notna()]
+            
             # Gradient Sentiment Overlay
             st.subheader("Stock Price with Sentiment Intensity Overlay")
             fig_gradient = plot_gradient_sentiment_overlay(df_price)
