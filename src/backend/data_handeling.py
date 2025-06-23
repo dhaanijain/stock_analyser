@@ -137,7 +137,7 @@ def fetch_prices(ticker:str, start_date:str, end_date:str)->pd.DataFrame:
 def articles_fetch_data(ticker:str, start_date:str, end_date:str)->pd.DataFrame:
     df_articles = pd.read_sql_query(f'''select * from stock_analyzer.stock_articles sa 
                                     where sa.stock_code ~* '{ticker}' 
-                                    and sa."time_stamp" between '{start_date}' and '{end_date}';''', engine)
+                                    and sa."published_date" between '{start_date}' and '{end_date}';''', engine)
     return df_articles
 
 

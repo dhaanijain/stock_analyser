@@ -64,12 +64,15 @@ def merge_tables(ticker:str, start_date:str, end_date:str)->pd.DataFrame:
     df_articles = groupby_all_articles(ticker, start_date, end_date).reset_index()
     df_prices = fetch_prices(ticker, start_date, end_date)
     df_prices.drop(columns=[
-        'sentiment_score', 'article_count'
-    ], inplace=True)
-    df_merged = pd.merge(df_prices, df_articles, on=['stock_code','date'], how='left').reset_index()
+        'sentiment_score', 'article_count', 'pct_change'  # Drop pct_change if present
+    ], inplace=True, errors='ignore')
+    # Calculate pct_change
+    df_prices = df_prices.sort_values(by='date')
+    df_prices['pct_change'] = df_prices['Close'].pct_change()
+    df_merged = pd.merge(df_prices, df_articles, on=['stock_code','date'], how='left').reset_index(drop=True)
     df_merged['sentiment_score'] = df_merged['sentiment_score'].astype(float)
     df_merged['article_count'] = df_merged['article_count'].astype(float)
-    logger.debug('Updating sentiment score in stock prices table')
+    logger.debug('Updating sentiment score and pct_change in stock prices table')
     upsert_postgres_from_dataframe(
         engine,
         df_merged,
@@ -80,7 +83,7 @@ def merge_tables(ticker:str, start_date:str, end_date:str)->pd.DataFrame:
         add_cols=True,       # set as needed
         alter_cols=True      # set as needed
     )
-    logger.debug('Stock prices updated with article count and sentiment score successfully')
+    logger.debug('Stock prices updated with article count, sentiment score, and pct_change successfully')
     
 # do one hot encoding on df_prices on sentiment column
 

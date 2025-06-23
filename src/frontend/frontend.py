@@ -7,6 +7,7 @@ import subprocess
 import sqlite3
 
 
+
 # Add backend directory to path
 sys.path.append(os.path.join(os.path.dirname(__file__), '..', 'backend'))
 from data_handeling import (
@@ -16,6 +17,8 @@ from data_handeling import (
     all_articles_push_data,
     fetch_prices
 )
+
+from recommendation import recommendation_generator
 
 from general import connect_to_db
 from data_processing import sentiment_analysis, merge_tables
@@ -102,6 +105,8 @@ if analyze_button:
             df_price = pd.read_sql_query(query_price, conn)
             
             
+            
+            
             if not df_price.empty:
                 st.success("Stock price data loaded from database!")
                 
@@ -118,6 +123,11 @@ if analyze_button:
                     st.success("News articles loaded from database!")
                 else:
                     st.warning("No news articles found for the selected period.")
+                result = recommendation_generator(df_price, df_articles)
+            else:
+                result = recommendation_generator(df_price, pd.DataFrame())
+                    
+            
             # conn.close()
             
             # if include_articles:
@@ -135,6 +145,10 @@ if analyze_button:
             #         st.success("Sentiment analysis completed!")
             
             # Display results
+            # Display AI Recommendation at the top
+            st.markdown("## AI Recommendation")
+            st.info(result)
+            
             st.title(f"{ticker} Stock Analysis")
             
             # Summary metrics
