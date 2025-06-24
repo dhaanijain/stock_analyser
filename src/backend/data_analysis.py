@@ -16,6 +16,11 @@ import plotly.express as px
 
     
 def data_analysis():
+    """
+    Run the main data analysis pipeline for a given ticker and date range.
+    Fetches price data, sorts, filters, and generates the main area chart.
+    Returns the generated plotly figure.
+    """
     ticker = "AAPL"
     start_date = "2025-05-12"
     end_date = "2025-06-11"
@@ -41,8 +46,21 @@ def data_analysis():
 
 # 1. Heatmap Calendar of Sentiment Scores
 def plot_sentiment_heatmap_plotly(df_price):
-
+    """
+    Generate a heatmap calendar of sentiment scores by day and month.
+    Args:
+        df_price (pd.DataFrame): DataFrame with at least 'date' and 'sentiment_score'.
+    Returns:
+        plotly Figure
+    """
     df = df_price.copy()
+    # Check for required columns
+    if 'date' not in df.columns:
+        st.warning("No 'date' column found in data. Cannot plot heatmap.")
+        return
+    if 'sentiment_score' not in df.columns:
+        st.warning("No 'sentiment_score' column found in data. Cannot plot heatmap.")
+        return
     df['date'] = pd.to_datetime(df['date'])
     df['day'] = df['date'].dt.day
     df['month'] = df['date'].dt.month_name()
@@ -77,6 +95,13 @@ import plotly.graph_objs as go
 
 #TODO: fix y axis left and right scale to exclude Nan values and set min value to 10% below the minimum value of the series
 def plot_area_chart(df_price):
+    """
+    Plot an area chart of Close price and sentiment score over time.
+    Args:
+        df_price (pd.DataFrame): DataFrame with 'date', 'Close', and 'sentiment_score'.
+    Returns:
+        plotly Figure
+    """
     import pandas as pd
     df = df_price.copy()
     df['date'] = pd.to_datetime(df['date'])
@@ -171,6 +196,13 @@ import numpy as np
 import plotly.graph_objs as go
 
 def plot_gradient_sentiment_overlay(df_price):
+    """
+    Plot Close price with a sentiment intensity overlay and smoothed sentiment line.
+    Args:
+        df_price (pd.DataFrame): DataFrame with 'date', 'Close', and 'sentiment_score'.
+    Returns:
+        plotly Figure
+    """
     df = df_price.copy()
     df['date'] = pd.to_datetime(df['date'])
     df.set_index('date', inplace=True)
@@ -234,6 +266,13 @@ def plot_gradient_sentiment_overlay(df_price):
 import plotly.graph_objs as go
 
 def plot_interactive(df_price):
+    """
+    Create an interactive plot with Close price and sentiment score on dual y-axes.
+    Args:
+        df_price (pd.DataFrame): DataFrame with 'date', 'Close', and 'sentiment_score'.
+    Returns:
+        plotly Figure
+    """
     import pandas as pd
     fig = go.Figure()
 
@@ -291,6 +330,13 @@ def plot_interactive(df_price):
 import plotly.graph_objs as go
 
 def plot_sentiment_spikes(df_price):
+    """
+    Plot sentiment score over time and highlight spikes where the change exceeds 0.5.
+    Args:
+        df_price (pd.DataFrame): DataFrame with 'date' and 'sentiment_score'.
+    Returns:
+        plotly Figure
+    """
     df = df_price.copy()
     df['sentiment_diff'] = df['sentiment_score'].diff()
     spikes = df[abs(df['sentiment_diff']) > 0.5]
@@ -330,6 +376,16 @@ def plot_sentiment_spikes(df_price):
 # write a function to train random forest model on the stock_prices table with columns date, sentiment_score, article_count and Close price
 from sklearn.ensemble import RandomForestRegressor
 def train_random_forest_model(df_price):
+    """
+    Train a Random Forest regressor on sentiment_score and article_count to predict Close price.
+    Args:
+        df_price (pd.DataFrame): DataFrame with 'sentiment_score', 'article_count', 'Close'.
+    Returns:
+        model: Trained RandomForestRegressor
+        importance_df: DataFrame of feature importances
+        mse: Mean squared error
+        accuracy: R^2 score
+    """
     df = df_price.copy()
     df['date'] = pd.to_datetime(df['date'])
     df.set_index('date', inplace=True)
@@ -365,6 +421,15 @@ def train_random_forest_model(df_price):
     return model, importance_df, mse, accuracy
 
 def train_logistic_regression_model(df_price):
+    """
+    Train a Logistic Regression model to predict price movement (up/down) from sentiment and article count.
+    Args:
+        df_price (pd.DataFrame): DataFrame with 'sentiment_score', 'article_count', 'Close'.
+    Returns:
+        model: Trained LogisticRegression
+        accuracy: Accuracy score
+        report: Classification report
+    """
     from sklearn.linear_model import LogisticRegression
     from sklearn.model_selection import train_test_split
     from sklearn.metrics import accuracy_score, classification_report
@@ -399,6 +464,15 @@ def train_logistic_regression_model(df_price):
 
 
 def train_xgboost_model(df_price):
+    """
+    Train an XGBoost regressor to predict Close price from sentiment_score and article_count.
+    Args:
+        df_price (pd.DataFrame): DataFrame with 'sentiment_score', 'article_count', 'Close'.
+    Returns:
+        model: Trained XGBRegressor
+        mse: Mean squared error
+        r2: R^2 score
+    """
     import xgboost as xgb
     from sklearn.model_selection import train_test_split
     from sklearn.metrics import mean_squared_error
@@ -437,6 +511,14 @@ def train_xgboost_model(df_price):
     
 #write the code to compare models and select the best one based on accuracy and mean squared error by calling the functions above
 def compare_models(df_price):
+    """
+    Train and compare Logistic Regression, Random Forest, and XGBoost models on the given data.
+    Select the best model based on accuracy and mean squared error, and save all models to disk.
+    Args:
+        df_price (pd.DataFrame): DataFrame with features and target.
+    Returns:
+        None
+    """
     print("Training Logistic Regression Model...")
     lr_model, lr_accuracy, lr_report = train_logistic_regression_model(df_price)
     
@@ -476,6 +558,12 @@ def predict_stock_price_for_ticker_date_df(df_price, ticker, date):
     """
     Predict the stock price for a given ticker and date using the best available model.
     If the date is not present in df_price, use the most recent available data for prediction.
+    Args:
+        df_price (pd.DataFrame): DataFrame with features and target.
+        ticker (str): Stock ticker symbol.
+        date (str): Date for prediction (YYYY-MM-DD).
+    Returns:
+        float: Predicted stock price
     """
     import joblib
     import os
@@ -517,5 +605,45 @@ def predict_stock_price_for_ticker_date_df(df_price, ticker, date):
     prediction = model.predict(X)
     print(f"Predicted by {model_name} model for ticker {ticker}.")
     return prediction[0]  # Return the predicted price
+
+def prepare_features_for_prediction(df):
+    """
+    Ensure 'sentiment_score' and 'article_count' columns exist in the DataFrame for prediction.
+    If missing, attempt to compute or fill them with default values.
+    """
+    import numpy as np
+    # If sentiment_score is missing, fill with 0 or compute if possible
+    if 'sentiment_score' not in df.columns:
+        df['sentiment_score'] = 0.0
+    # If article_count is missing, fill with 0 or compute if possible
+    if 'article_count' not in df.columns:
+        df['article_count'] = 0
+    # Fill any remaining NaNs
+    df['sentiment_score'] = df['sentiment_score'].fillna(0.0)
+    df['article_count'] = df['article_count'].fillna(0)
+    return df
+
+def stock_price_fetch_data_with_sentiment(ticker, start_date, end_date):
+    """
+    Fetch stock price data and ensure sentiment_score and article_count columns are present.
+    """
+    from data_handeling import stock_price_fetch_data
+    from data_processing import sentiment_analysis, merge_tables
+    # Fetch price data
+    df_price = stock_price_fetch_data(ticker, start_date, end_date)
+    # Run sentiment analysis and merge if needed
+    try:
+        sentiment_analysis(ticker, start_date, end_date)
+        df_price = merge_tables(ticker, start_date, end_date)
+    except Exception as e:
+        # If merge fails, ensure columns exist
+        if 'sentiment_score' not in df_price.columns:
+            df_price['sentiment_score'] = 0.0
+        if 'article_count' not in df_price.columns:
+            df_price['article_count'] = 0
+    # Fill NaNs
+    df_price['sentiment_score'] = df_price['sentiment_score'].fillna(0.0)
+    df_price['article_count'] = df_price['article_count'].fillna(0)
+    return df_price
 
 

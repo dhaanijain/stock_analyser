@@ -1,3 +1,21 @@
+"""
+frontend.py - STOXiE.ai Streamlit Frontend
+
+This file implements the Streamlit-based frontend for the STOXiE.ai project. It provides a user-friendly interface for:
+- Inputting stock ticker, date range, and analysis options
+- Triggering the backend data pipeline
+- Fetching processed data from the database
+- Displaying AI recommendations, summary metrics, news articles, and interactive visualizations
+
+Key Features:
+- Sidebar for user input
+- Main area for results, charts, and recommendations
+- Robust error handling and user feedback
+- Modular integration with backend and recommendation engine
+
+Typical usage: Run this file with Streamlit to launch the web app.
+"""
+
 import streamlit as st
 import pandas as pd
 from datetime import datetime, timedelta
@@ -22,7 +40,7 @@ from recommendation import recommendation_generator
 
 from general import connect_to_db
 from data_processing import sentiment_analysis, merge_tables
-from data_analysis import plot_area_chart, plot_sentiment_heatmap_plotly, plot_gradient_sentiment_overlay, plot_interactive, plot_sentiment_spikes
+from data_analysis import plot_area_chart, plot_sentiment_heatmap_plotly, plot_gradient_sentiment_overlay, plot_interactive, plot_sentiment_spikes, predict_stock_price_for_ticker_date_df, compare_models
 
 # Page config
 st.set_page_config(
@@ -104,8 +122,17 @@ if analyze_button:
             """
             df_price = pd.read_sql_query(query_price, conn)
             
-            
-            
+            try:
+                compare_models(df_price)
+            except Exception as e:
+                st.warning(f"Model training failed: {e}")
+            future_date = (pd.to_datetime(end_date) + pd.Timedelta(days=15)).date()
+            predicted_price = predict_stock_price_for_ticker_date_df(df_price, ticker, str(future_date))
+            # Ensure predicted_price is a native Python float for all downstream usage
+            if hasattr(predicted_price, 'item'):
+                predicted_price = predicted_price.item()
+            else:
+                predicted_price = float(predicted_price)
             
             if not df_price.empty:
                 st.success("Stock price data loaded from database!")
@@ -123,9 +150,9 @@ if analyze_button:
                     st.success("News articles loaded from database!")
                 else:
                     st.warning("No news articles found for the selected period.")
-                result = recommendation_generator(df_price, df_articles)
+                result = recommendation_generator(df_price, df_articles, predicted_price)
             else:
-                result = recommendation_generator(df_price, pd.DataFrame())
+                result = recommendation_generator(df_price, pd.DataFrame(), predicted_price)
                     
             
             # conn.close()
@@ -148,9 +175,20 @@ if analyze_button:
             # Display AI Recommendation at the top
             st.markdown("## AI Recommendation")
             st.info(result)
-            
+
             st.title(f"{ticker} Stock Analysis")
+
+            # Ensure models are trained before prediction
             
+
+            # Predict and display the predicted price for 15 days after the selected end date
+            try:
+                # Ensure predicted_price is a native Python float
+                predicted_price = float(predicted_price)
+                st.metric(f"Predicted Price ({future_date})", f"${predicted_price:.2f}")
+            except Exception as e:
+                st.warning(f"Prediction unavailable: {e}")
+
             # Summary metrics
             col1, col2, col3, col4 = st.columns(4)
             with col1:

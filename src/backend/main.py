@@ -1,3 +1,18 @@
+"""
+main.py - STOXiE.ai Backend Pipeline Entrypoint
+
+This script orchestrates the backend data pipeline for the STOXiE.ai project. It performs the following steps:
+
+1. Fetches stock price data for a given ticker and date range
+2. Pushes the price data to the database
+3. Fetches news articles for the ticker and date range
+4. Pushes the articles to the database (if any are found)
+5. Runs sentiment analysis on the news articles
+6. Merges sentiment and article data with price data, calculates pct_change, and updates the database
+
+Typical usage: Run this script as the backend data pipeline, either standalone or triggered by the frontend.
+"""
+
 import pandas as pd
 from data_handeling import all_articles_fetch_data, stock_price_fetch_data
 from data_handeling import all_articles_push_data, stock_price_push_data

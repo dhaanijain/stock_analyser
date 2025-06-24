@@ -31,6 +31,15 @@ GNEWS_API_KEY = "abe68bc5c29ee58b31c7ebbcb07b1290"  # Updated API key
 
 # 1. Fetch stock data
 def stock_price_fetch_data(ticker, start_date, end_date):
+    """
+    Fetch historical stock price data for a given ticker and date range using yfinance.
+    Args:
+        ticker (str): Stock ticker symbol.
+        start_date (str): Start date (YYYY-MM-DD).
+        end_date (str): End date (YYYY-MM-DD).
+    Returns:
+        pd.DataFrame: DataFrame with stock price data and additional columns.
+    """
     df_price = yf.download(ticker, start=start_date, end=end_date)
     if df_price is None or not isinstance(df_price, pd.DataFrame) or df_price.empty:
         logger.error(f"No data returned for ticker {ticker} from {start_date} to {end_date}.")
@@ -51,6 +60,13 @@ def stock_price_fetch_data(ticker, start_date, end_date):
 
 # 2.push stock data to database
 def stock_price_push_data(df_price):
+    """
+    Push stock price DataFrame to the database using upsert.
+    Args:
+        df_price (pd.DataFrame): DataFrame with stock price data.
+    Returns:
+        None
+    """
     if df_price is None or df_price.empty:
         logger.warning('No stock price data to push to database.')
         return
@@ -70,6 +86,15 @@ def stock_price_push_data(df_price):
     
 # 4. Fetch all articles using GNews    
 def all_articles_fetch_data(query, start_dt, end_dt):
+    """
+    Fetch all news articles for a given query and date range using GNews.
+    Args:
+        query (str): Search query (usually ticker or company name).
+        start_dt (str or date): Start date.
+        end_dt (str or date): End date.
+    Returns:
+        pd.DataFrame or None: DataFrame with articles, or None if no articles found.
+    """
     
     all_articles = []
 
@@ -111,6 +136,13 @@ def all_articles_fetch_data(query, start_dt, end_dt):
 
 # 5. Push all articles to database
 def all_articles_push_data(all_articles):
+    """
+    Push all articles DataFrame to the database using upsert.
+    Args:
+        all_articles (pd.DataFrame): DataFrame with news articles.
+    Returns:
+        None
+    """
     all_articles['unique_key'] = all_articles['headline'].astype(str) + '_' + \
                                 all_articles['date'].astype(str) + '_' + \
                                 all_articles['stock_code'].astype(str)
@@ -129,12 +161,30 @@ def all_articles_push_data(all_articles):
 
 # 6. pull stock prices from database    
 def fetch_prices(ticker:str, start_date:str, end_date:str)->pd.DataFrame:
+    """
+    Pull stock prices from the database for a given ticker and date range.
+    Args:
+        ticker (str): Stock ticker symbol.
+        start_date (str): Start date (YYYY-MM-DD).
+        end_date (str): End date (YYYY-MM-DD).
+    Returns:
+        pd.DataFrame: DataFrame with stock price data.
+    """
     df = pd.read_sql_query(f'''select * from stock_analyzer.stock_prices sp where sp.stock_code ~* 
                            '{ticker}' and sp."time_stamp" between '{start_date}' and '{end_date}';''', engine)    
     return df
 
 # 7. pull articles from database
 def articles_fetch_data(ticker:str, start_date:str, end_date:str)->pd.DataFrame:
+    """
+    Pull news articles from the database for a given ticker and date range.
+    Args:
+        ticker (str): Stock ticker symbol.
+        start_date (str): Start date (YYYY-MM-DD).
+        end_date (str): End date (YYYY-MM-DD).
+    Returns:
+        pd.DataFrame: DataFrame with news articles.
+    """
     df_articles = pd.read_sql_query(f'''select * from stock_analyzer.stock_articles sa 
                                     where sa.stock_code ~* '{ticker}' 
                                     and sa."published_date" between '{start_date}' and '{end_date}';''', engine)

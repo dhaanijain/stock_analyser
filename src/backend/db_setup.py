@@ -1,6 +1,19 @@
 """
 db_setup.py
-This script sets up the database tables required for the stock analyzer app using SQLAlchemy (PostgreSQL backend).
+
+This script sets up the PostgreSQL database schema and tables required for the STOXiE.ai stock analyzer application using SQLAlchemy ORM.
+
+Features:
+- Defines ORM models for stock_articles and stock_prices tables under the stock_analyzer schema
+- Supports creation of the schema if it does not exist (with --create-schema flag)
+- Can be run as a script to initialize the database for the app
+
+Usage:
+    python db_setup.py --create-schema  # Creates schema and tables
+    python db_setup.py                  # Creates tables only (if schema exists)
+
+Environment variables required (in .env):
+    DB_USERNAME, DB_PASSWORD, DB_HOST, DB_PORT, DB_DATABASE
 """
 
 from sqlalchemy import create_engine, Column, Integer, BigInteger, String, Date, Float, Text, TIMESTAMP, text
