@@ -1,0 +1,11 @@
+streamlit
+pandas
+numpy
+sqlalchemy
+yfinance
+gnews
+plotly
+seaborn
+matplotlib
+scikit-learn
+python-dotenv

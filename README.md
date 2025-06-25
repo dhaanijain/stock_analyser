@@ -30,6 +30,7 @@ AI Project/
 │   │   ├── data_handeling.py      # Data fetching, pushing, and DB utilities
 │   │   ├── data_processing.py     # Sentiment analysis, merging, pct_change
 │   │   ├── data_analysis.py       # All charting and model functions
+│   │   ├── db_setup.py            # Sets up database structure 
 │   │   ├── general.py             # Logging, DB connection, upsert helpers
 │   │   └── ...
 │   ├── frontend/
@@ -59,6 +60,7 @@ AI Project/
 
 ## Key Files & Functions
 - `main.py`: Orchestrates the backend pipeline
+- `db_setup.py`: Sets up the database structure
 - `data_handeling.py`: Data fetching/pushing, DB utilities
 - `data_processing.py`: Sentiment analysis, merging, `pct_change` calculation
 - `data_analysis.py`: Charting (area, heatmap, overlay, interactive, spikes), ML models
