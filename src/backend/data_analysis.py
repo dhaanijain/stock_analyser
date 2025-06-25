@@ -7,7 +7,6 @@ from general import connect_to_db
 from general import logger
 import matplotlib.pyplot as plt
 from data_handeling import fetch_prices
-from data_processing import one_hot_encode_sentiment
 import seaborn as sns
 import plotly.graph_objs as go
 import plotly.express as px
