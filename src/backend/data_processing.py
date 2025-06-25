@@ -113,37 +113,3 @@ def merge_tables(ticker:str, start_date:str, end_date:str)->pd.DataFrame:
     )
     logger.debug('Stock prices updated with article count, sentiment score, and pct_change successfully')
     
-# do one hot encoding on df_prices on sentiment column
-
-def one_hot_encode_sentiment(df_prices: pd.DataFrame) -> pd.DataFrame:
-    """
-    Perform one-hot encoding on the sentiment_score column of a DataFrame.
-    Args:
-        df_prices (pd.DataFrame): DataFrame with a 'sentiment_score' column.
-    Returns:
-        pd.DataFrame: DataFrame with one-hot encoded sentiment columns added.
-    """
-    if 'sentiment' not in df_prices.columns:
-        print("Sentiment column not found in DataFrame.")
-        return df_prices
-    
-    encoder = OneHotEncoder(sparse_output=False, dtype=int)
-    sentiment_arr = encoder.fit_transform(df_prices[['sentiment_score']])
-    sentiment_df = pd.DataFrame(sentiment_arr, columns=encoder.get_feature_names_out(['sentiment_score']), index=df_prices.index)
-    
-    df_prices = pd.concat([df_prices, sentiment_df], axis=1)
-
-def articles_fetch_data(ticker:str, start_date:str, end_date:str)->pd.DataFrame:
-    """
-    Pull news articles from the database for a given ticker and date range.
-    Args:
-        ticker (str): Stock ticker symbol.
-        start_date (str): Start date (YYYY-MM-DD).
-        end_date (str): End date (YYYY-MM-DD).
-    Returns:
-        pd.DataFrame: DataFrame with news articles.
-    """
-    df_articles = pd.read_sql_query(f'''select * from stock_analyzer.stock_articles sa 
-                                    where sa.stock_code ~* '{ticker}' 
-                                    and sa."published_date" between '{start_date}' and '{end_date}';''', engine)
-    return df_articles

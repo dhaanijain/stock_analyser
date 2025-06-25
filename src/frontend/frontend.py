@@ -155,22 +155,6 @@ if analyze_button:
                 result = recommendation_generator(df_price, pd.DataFrame(), predicted_price)
                     
             
-            # conn.close()
-            
-            # if include_articles:
-            #     with st.spinner("Fetching and processing news articles..."):
-            #         # df_articles = all_articles_fetch_data(ticker, start_date, end_date)
-            #         if not df_articles.empty:
-            #             all_articles_push_data(df_articles)
-            #             st.success("News articles processed successfully!")
-            #         else:
-            #             st.warning("No news articles found for the selected period.")
-                
-            #     with st.spinner("Analyzing sentiment..."):
-            #         sentiment_analysis(ticker, start_date, end_date)
-            #         merge_tables(ticker, start_date, end_date)
-            #         st.success("Sentiment analysis completed!")
-            
             # Display results
             # Display AI Recommendation at the top
             st.markdown("## AI Recommendation")
@@ -221,20 +205,6 @@ if analyze_button:
                     df_articles[display_columns].head(10),
                     hide_index=True
                 )
-            
-            # Sentiment Analysis
-            # if include_sentiment:
-            #     st.subheader("Sentiment Analysis")
-            #     try:
-            #         # Get the latest data from database
-            #         df_price = fetch_prices(ticker, start_date, end_date)
-            #         if not df_price.empty and 'sentiment_score' in df_price.columns:
-            #             fig = plot_area_chart(df_price)
-            #             st.plotly_chart(fig, use_container_width=True)
-            #         else:
-            #             st.warning("No sentiment analysis data available for visualization.")
-            #     except Exception as e:
-            #         st.warning(f"Could not generate sentiment analysis visualization: {str(e)}")
             
             
             # Price Chart

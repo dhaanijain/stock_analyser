@@ -108,42 +108,45 @@ Below are example screenshots of the STOXiE.ai application, including the UI, ch
 
 ---
 
-### 2. Main Dashboard & News Table
+### 2. AI Recommendation
+![Ai recommendation](assets/screenshots/Ai_recommendation.png)
+
+### 3. Main Dashboard & News Table
 
 ![AAPL Stock Analysis Dashboard](assets/screenshots/stock_analysis_and_top_10_headline_articles.png)
 *Main dashboard showing current price, price change, articles analyzed, average sentiment, and recent news articles.*
 
 ---
 
-### 3. Sentiment Score Heatmap by Day
+### 4. Sentiment Score Heatmap by Day
 
 ![Sentiment Score Heatmap by Day](assets/screenshots/sentiment_score_heatmap_by_day.png)
 *Heatmap visualizing daily sentiment scores for each day and month.*
 
 ---
 
-### 4. Sentiment Spikes Over Time
+### 5. Sentiment Spikes Over Time
 
 ![Sentiment Spikes Over Time](assets/screenshots/sentiment_spikes_overtime.png)
 *Line chart showing spikes in sentiment scores over time.*
 
 ---
 
-### 5. Stock Price vs Sentiment Area Chart
+### 6. Stock Price vs Sentiment Area Chart
 
 ![Stock Price vs Sentiment Area Chart](assets/screenshots/stock_price_vs_sentiment_area_chart.png)
 *Dual-axis area chart showing stock price and sentiment score trends.*
 
 ---
 
-### 6. Stock Price with Sentiment Intensity Overlay
+### 7. Stock Price with Sentiment Intensity Overlay
 
 ![Stock Price with Sentiment Intensity Overlay](assets/screenshots/stock_price_vs_sentiment_intensity_overlay.png)
 *Overlay chart visualizing stock price with sentiment intensity background.*
 
 ---
 
-### 7. Interactive stock vs sentiment trend
+### 8. Interactive stock vs sentiment trend
 
 ![Interactive stock vs sentiment trend](assets/screenshots/Interactive_stock_vs_sentiment_trend.png)
 

@@ -1,5 +1,3 @@
-#write a function to visualize the historical data of the table stock_prices with columns date semntiment_score and article_count
-
 from datetime import timedelta
 import pandas as pd
 from nltk.sentiment import SentimentIntensityAnalyzer
@@ -13,7 +11,8 @@ from data_processing import one_hot_encode_sentiment
 import seaborn as sns
 import plotly.graph_objs as go
 import plotly.express as px
-
+import numpy as np
+from sklearn.ensemble import RandomForestRegressor
     
 def data_analysis():
     """
@@ -91,9 +90,8 @@ def plot_sentiment_heatmap_plotly(df_price):
 
 
 # 2. Area Chart of Close Price and Sentiment
-import plotly.graph_objs as go
 
-#TODO: fix y axis left and right scale to exclude Nan values and set min value to 10% below the minimum value of the series
+
 def plot_area_chart(df_price):
     """
     Plot an area chart of Close price and sentiment score over time.
@@ -190,10 +188,7 @@ def plot_area_chart(df_price):
     return fig
 
 # 3. Dual Line with Sentiment Gradient Background
-import plotly.graph_objs as go
-import numpy as np
 
-import plotly.graph_objs as go
 
 def plot_gradient_sentiment_overlay(df_price):
     """
@@ -373,8 +368,7 @@ def plot_sentiment_spikes(df_price):
     fig.show()
     return fig
 
-# write a function to train random forest model on the stock_prices table with columns date, sentiment_score, article_count and Close price
-from sklearn.ensemble import RandomForestRegressor
+
 def train_random_forest_model(df_price):
     """
     Train a Random Forest regressor on sentiment_score and article_count to predict Close price.
@@ -509,7 +503,6 @@ def train_xgboost_model(df_price):
     return model, mse, r2
 
     
-#write the code to compare models and select the best one based on accuracy and mean squared error by calling the functions above
 def compare_models(df_price):
     """
     Train and compare Logistic Regression, Random Forest, and XGBoost models on the given data.
